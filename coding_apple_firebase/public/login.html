@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+  <link href="main.css" rel="stylesheet">
+</head>
+<body>
+
+  <script src="https://www.gstatic.com/firebasejs/8.6.5/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.5/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.5/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.5/firebase-storage.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script> 
+
+  <script src="https://apis.google.com/js/platform.js" async defer></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA0KGEGCpoPyyk-UY0Vx5yWcnlV6Y0ogvY",
+      authDomain: "mini-edc22.firebaseapp.com",
+      projectId: "mini-edc22",
+      storageBucket: "mini-edc22.appspot.com",
+      messagingSenderId: "663702113253",
+      appId: "1:663702113253:web:8299ecf0df9752795e7d0c",
+      measurementId: "G-C9VYS42FVF"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
+  <nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">online market</a>
+      <span class="ms-auto mx-2" id="userName">user name</span>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="#">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Features</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="#">Pricing</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link disabled" aria-disabled="true">Disabled</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container mt-3">
+    <div class="mb-3">
+      <input type="text" class="form-control" placeholder="name" id="name-new">
+    </div>
+    <div class="mb-3">
+      <input type="email" class="form-control" placeholder="email" id="email-new">
+    </div>
+    <div class="mb-3">
+      <input type="password" class="form-control" placeholder="pw" id="pw-new">
+    </div>
+    <button type="submit" class="btn btn-primary" id="register">register</button>
+  </div>
+
+  <div class="container mt-3">
+    <div class="mb-3">
+      <input type="email" class="form-control" placeholder="email" id="email">
+    </div>
+    <div class="mb-3">
+      <input type="password" class="form-control" placeholder="pw" id="pw">
+    </div>
+    <button type="submit" class="btn btn-primary" id="login">login</button>
+    <button type="submit" class="btn btn-primary" id="logout">logout</button>
+  </div>
+
+  <div class="container mt-3">
+    <button onclick="googleSignIn()" class="btn btn-primary">Google register/login</button>
+    <button onclick="signOut()" class="btn btn-primary">Google logout</button>
+  </div>
+
+  <script>
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    //유저정보 확인
+    // var 뺀거 = localStorage.getItem('user');
+    // $('#userName').html(JSON.parse(뺀거).displayName)
+
+    firebase.auth().onAuthStateChanged((user)=>{
+        if (user) {
+            console.log(user.uid)
+            console.log(user.displayName)
+            localStorage.setItem('user', JSON.stringify(user))
+            $('#userName').html(user.displayName)
+        }
+    })
+
+    $('#logout').click(function(){
+        firebase.auth().signOut()
+        localStorage.removeItem('user')
+    })
+
+    $('#login').click(function(){
+        var 이메일 = $('#email').val();
+        var 패스워드 = $('#pw').val();
+
+        firebase.auth().signInWithEmailAndPassword(이메일, 패스워드).then((result)=>{
+            console.log(result.user)
+        })
+    })
+  
+    $('#register').click(function(){
+        var 이메일 = $('#email-new').val();
+        var 패스워드 = $('#pw-new').val();
+        var 이름 = $('#name-new').val();
+
+        firebase.auth().createUserWithEmailAndPassword(이메일, 패스워드).then((result)=>{
+            var 유저정보 = { name : 이름, email : 이메일 }
+            db.collection('user').doc(result.user.uid).set(유저정보)
+
+            console.log(result)
+            console.log(result.user)
+            result.user.updateProfile( {displayName : 이름} )
+        })
+    })
+
+    function googleSignIn() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        firebase.auth().signInWithPopup(provider).then((result) => {
+            console.log(result.user);
+        }).catch((error) => {
+            console.error(error);
+        });
+    }
+
+    function signOut() {
+        firebase.auth().signOut().then(() => {
+            console.log("Logged out");
+        }).catch((error) => {
+            console.error(error);
+        });
+    }
+
+  </script>
+  
+</body>
+</html>
