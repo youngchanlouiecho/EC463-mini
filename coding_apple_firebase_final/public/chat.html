@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document</title>
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+  <link href="main.css" rel="stylesheet">
+</head>
+<body>
+
+  <nav class="navbar navbar-expand-lg bg-body-tertiary">
+    <div class="container-fluid">
+      <a class="navbar-brand" href="#">online market</a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarNav">
+        <ul class="navbar-nav">
+          <li class="nav-item">
+            <a class="nav-link active" aria-current="page" href="index.html">Home</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="upload.html">Post</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="login.html">Login/Register</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link" href="chat.html">Messages</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <script src="https://www.gstatic.com/firebasejs/8.6.5/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.5/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.5/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.6.5/firebase-storage.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script> 
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyA0KGEGCpoPyyk-UY0Vx5yWcnlV6Y0ogvY",
+      authDomain: "mini-edc22.firebaseapp.com",
+      projectId: "mini-edc22",
+      storageBucket: "mini-edc22.appspot.com",
+      messagingSenderId: "663702113253",
+      appId: "1:663702113253:web:8299ecf0df9752795e7d0c",
+      measurementId: "G-C9VYS42FVF"
+    };
+    firebase.initializeApp(firebaseConfig);
+  </script>
+
+    <div class="container p-4 detail">
+        <div class="row">
+        <div class="col-3 p-0">
+            <ul class="list-group chat-list">
+            <li class="list-group-item">
+                <!-- <h6>chatroom1</h6>
+                <h6 class="text-small">chatroom id</h6> -->
+            </li>
+            </ul>
+        </div>
+        <div class="col-9 p-0">
+            <div class="chat-room">
+            <ul class="list-group chat-content">
+                <!-- <li><span class="chat-box">chatroom1 content</span></li>
+                <li><span class="chat-box">chatroom1 content</span></li>
+                <li><span class="chat-box mine">chatroom1 content</span></li> -->
+                ↙️ select chatroom
+            </ul>
+            <div class="input-group">
+                <input class="form-control" id="chat-input">
+                <button class="btn btn-secondary" id="send">send</button>
+            </div>
+            </div>
+        </div>
+        </div>
+    </div> 
+
+
+  <script>
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+    var my_uid = JSON.parse( localStorage.getItem('user') ).uid
+
+    $('#send').click(function(){
+        var chat_data = {
+            content : $('#chat-input').val(),
+            date : new Date(),
+            uid : my_uid
+        }
+
+        db.collection('chatroom').doc(chatroom_id).collection('messages').add(chat_data)
+
+        $('#chat-input').val(''); // input box refreshed when message sent
+    })
+
+    var chatroom_id;
+
+    db.collection('users').doc(my_uid).get().then((userDoc) => {
+    if (userDoc.exists) {
+        const userName = userDoc.data().name; // 사용자의 이름 필드 이름에 따라 수정
+        // 사용자 이름을 페이지에 표시하거나 필요한 곳에 사용합니다.
+        // 예를 들어, 사용자 이름을 네비게이션 바에 표시할 수 있습니다.
+        $('.navbar-brand').text(userName + "'s online market");
+    }
+});
+
+    db.collection('chatroom').where('who', 'array-contains', my_uid).get().then((result)=>{
+        result.forEach((a)=>{
+            console.log(a.data())
+
+            var template = `<li class="list-group-item">
+                    <h6>${a.data().product}</h6>
+                    <h6 class="text-small">${a.id}</h6>
+                </li>`
+            $('.chat-list').append(template)
+
+            $('.list-group-item').click(function (e) {
+                chatroom_id = $(this).children('.text-small').text();
+
+                e.stopImmediatePropagation();
+
+                function scrollToBottom() { // function to scroll to bottom when message sent
+                    var chatContent = $('.chat-content');
+                    chatContent.scrollTop(chatContent[0].scrollHeight);
+                }
+
+                db.collection('chatroom').doc(chatroom_id).collection('messages').orderBy('date').onSnapshot((result)=>{
+                    $('.chat-content').html('');
+
+                    result.forEach((a)=>{
+                        console.log(a.data())
+
+                        const message_uid = a.data().uid;
+                        const chatClass = (my_uid === message_uid) ? "chat-box mine" : "chat-box";
+                        // my messages align to right, opponent's messages align to left
+
+                        var db_template = `<li><span class="${chatClass}">${a.data().content}</span></li>`;
+                        $('.chat-content').append(db_template)
+                    })
+
+                    scrollToBottom();
+                })
+            })
+        })
+    })
+    
+  </script>
+  
+</body>
+</html>
